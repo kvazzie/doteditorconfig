@@ -10,9 +10,8 @@ result-*
 .direnv/
 .envrc.local
 
-# nix
-.direnv/
-flake.lock
+# nix (keep flake.lock committed for reproducibility — uncomment to ignore in apps)
+# flake.lock
 
 # helix
 .helix/runtime/
