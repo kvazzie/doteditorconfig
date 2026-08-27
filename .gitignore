@@ -1,0 +1,22 @@
+# devenv
+.devenv/
+.devenv.flake.nix
+devenv.local.nix
+.devenv.lock
+result
+result-*
+
+# direnv
+.direnv/
+.envrc.local
+
+# nix
+.direnv/
+flake.lock
+
+# helix
+.helix/runtime/
+
+# os
+.DS_Store
+Thumbs.db

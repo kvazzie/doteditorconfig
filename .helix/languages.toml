@@ -1,0 +1,48 @@
+# Helix repo-level languages — copy to <repo>/.helix/languages.toml
+# Only override what the repo actually uses; Helix merges with ~/.config/helix/languages.toml
+# Docs: https://docs.helix-editor.com/languages.html
+
+# --- Nix (matches devenv.nix) ---
+[[language]]
+name = "nix"
+auto-format = true
+formatter = { command = "nixpkgs-fmt" }
+language-servers = ["nil"]
+indent = { tab-width = 2, unit = "  " }
+
+[language-server.nil]
+command = "nil"
+
+# --- Markdown (respects .editorconfig max_line_length = off) ---
+[[language]]
+name = "markdown"
+auto-format = false
+soft-wrap.enable = true
+soft-wrap.wrap-indicator = ""
+
+# --- Bash / Shell (if shellcheck/shfmt enabled in devenv.nix) ---
+[[language]]
+name = "bash"
+auto-format = true
+formatter = { command = "shfmt", args = ["-i", "2", "-ci"] }
+language-servers = ["bash-language-server"]
+
+[language-server.bash-language-server]
+command = "bash-language-server"
+args = ["start"]
+
+# --- Examples: uncomment per project ---
+# [[language]]
+# name = "python"
+# auto-format = true
+# formatter = { command = "ruff", args = ["format", "-"] }
+# language-servers = ["pyright", "ruff"]
+
+# [[language]]
+# name = "rust"
+# auto-format = true
+
+# [[language]]
+# name = "typescript"
+# auto-format = true
+# formatter = { command = "prettier", args = ["--parser", "typescript"] }
