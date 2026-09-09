@@ -1,17 +1,19 @@
 # Helix repo-level languages — copy to <repo>/.helix/languages.toml
 # Only override what the repo actually uses; Helix merges with ~/.config/helix/languages.toml
 # Docs: https://docs.helix-editor.com/languages.html
-
-# --- Nix (matches devenv.nix) ---
+#
+# --- Nix (same tools as devenv.nix / CI: nixpkgs-fmt + nixd) ---
+# devenv `languages.nix.enable` provides nixd as the language server;
+# `nixpkgs-fmt` is the formatter enforced by the git-hooks/CI check.
 [[language]]
 name = "nix"
 auto-format = true
 formatter = { command = "nixpkgs-fmt" }
-language-servers = ["nil"]
+language-servers = ["nixd"]
 indent = { tab-width = 2, unit = "  " }
 
-[language-server.nil]
-command = "nil"
+[language-server.nixd]
+command = "nixd"
 
 # --- Markdown (respects .editorconfig max_line_length = off) ---
 [[language]]

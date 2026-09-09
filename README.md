@@ -1,6 +1,6 @@
 # doteditorconfig
 
-Batteries-included base tooling for new (especially experimental) repos. Stop copy-pasting `.editorconfig` / `devenv` / `direnv` / `git-hooks` / Helix boilerplate.
+Batteries-included base tooling for new (especially experimental) repos. Stop copy-pasting `.editorconfig` / `devenv` / `direnv` / `git-hooks` boilerplate.
 
 Clone once, `git subtree` (or just `cp`) into new projects.
 
@@ -10,16 +10,12 @@ Clone once, `git subtree` (or just `cp`) into new projects.
 .
 ├── .editorconfig          # root = true, tab/2, lf, utf-8, trimmed (md + bat exceptions)
 ├── .envrc                 # direnv + devenv entrypoint (copy to repo root)
-├── flake.nix              # devenv flake shell (also mirrored in devenv/flake.nix for subtree)
+├── flake.nix              # devenv flake shell
+├── flake.lock             # pinned inputs (keep committed)
 ├── devenv.nix             # languages + git-hooks + enterShell
 ├── devenv.yaml            # inputs (nixpkgs rolling)
-├── devenv/                # mirror for `git subtree --prefix=devenv` usage
-│   ├── flake.nix
-│   ├── devenv.nix
-│   └── devenv.yaml
 ├── .helix/
-│   ├── config.toml        # repo-level Helix editor config
-│   └── languages.toml     # repo-level Helix languages config
+│   └── languages.toml     # repo-level Helix languages (project LSP/formatters only, no personal config)
 └── README.md
 ```
 
@@ -35,8 +31,8 @@ git subtree add --prefix=.tooling doteditorconfig main --squash
 # then copy what you need to root:
 cp .tooling/.editorconfig ./
 cp .tooling/.envrc ./
+cp .tooling/{flake.nix,flake.lock,devenv.nix,devenv.yaml} ./
 cp -r .tooling/.helix ./
-cp -r .tooling/devenv ./  # or just cp .tooling/devenv/* ./ if you keep devenv at root
 direnv allow
 devenv shell  # or just enter the dir
 ```
@@ -54,8 +50,8 @@ npx degit artemi1/doteditorconfig#main -- .tooling
 git clone --depth 1 git@github.com:artemi1/doteditorconfig.git /tmp/doteditorconfig
 cp /tmp/doteditorconfig/.editorconfig ./
 cp /tmp/doteditorconfig/.envrc ./
+cp /tmp/doteditorconfig/{flake.nix,flake.lock,devenv.nix,devenv.yaml} ./
 cp -r /tmp/doteditorconfig/.helix ./
-cp /tmp/doteditorconfig/devenv/{flake.nix,devenv.nix,devenv.yaml} ./
 ```
 
 ### Option C: gist-style (single file)
@@ -68,28 +64,29 @@ Prereqs: `nix` with flakes enabled + `direnv` + `nix-direnv`.
 
 ```bash
 cp .envrc .envrc          # from this repo to new repo root
-cp devenv/flake.nix ./
-cp devenv/devenv.nix ./
-cp devenv/devenv.yaml ./
+cp {flake.nix,flake.lock,devenv.nix,devenv.yaml} ./
 direnv allow
 # devenv will install git-hooks on first enter
 ```
 
-`devenv.nix:3` declares basic hooks (`trim-trailing-whitespace`, `end-of-file-fixer`, `editorconfig-checker`, `check-merge-conflicts`). Enable per-project hooks there (e.g. `nixpkgs-fmt`, `shellcheck`, `statix`).
+`devenv.nix` declares basic hooks (`trim-trailing-whitespace`, `end-of-file-fixer`, `editorconfig-checker`, `check-merge-conflicts`). Enable per-project hooks there (e.g. `nixpkgs-fmt`, `shellcheck`, `statix`).
+
+Nix checks (`nixpkgs-fmt`, `statix`, `deadnix`) stay in `devenv.nix` git-hooks — they are what CI will run. `.helix/languages.toml` points at the same toolchain (`nixpkgs-fmt`, `nixd`), so local editing matches CI.
 
 Hooks are installed via `devenv`'s `git-hooks` module — no manual `.git/hooks` copying needed. `devenv shell` / `direnv` handles it.
 
 ## Helix
 
-Helix loads repo-local config from `./.helix/config.toml` and `./.helix/languages.toml` (since 24.07, workspace config). Copy:
+This template is not an opinionated Helix distribution: no `config.toml` (theme, keys, editor prefs live in `~/.config/helix/`). The repo defines only `.helix/languages.toml` — project-specific LSP/formatters needed to work on *this* project. The Nix section there mirrors the devenv/CI toolchain (`nixpkgs-fmt` formatter, `nixd` language server from `languages.nix.enable`), so the contributor edits with the same tools CI checks.
+
+Helix loads repo-local config from `./.helix/languages.toml` (since 24.07, workspace config). Copy:
 
 ```bash
 mkdir -p .helix
-cp .helix/config.toml .helix/config.toml
-cp .helix/languages.toml .helix/languages.toml   # optional
+cp .helix/languages.toml .helix/languages.toml
 ```
 
-Tweak per-project. See `.helix/config.toml:1` and `.helix/languages.toml:1`.
+Tweak per-project. See `.helix/languages.toml:1`.
 
 ## EditorConfig
 
@@ -99,7 +96,7 @@ Already at repo root. No setup. Verifiable via `editorconfig-checker` hook.
 
 - [x] .editorconfig
 - [x] devenv + .envrc + git-hooks
-- [x] Helix repo templates
+- [x] Helix repo languages (project-only, no personal config.toml)
 - [ ] lefthook / pre-commit alternative template
 - [ ] justfile / taskfile template
 - [ ] CI (github actions) minimal template
