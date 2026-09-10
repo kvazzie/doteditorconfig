@@ -1,5 +1,7 @@
 # doteditorconfig
 
+![CodeRabbit Pull Request Reviews](https://img.shields.io/coderabbit/prs/github/kvazzie/doteditorconfig?utm_source=oss&utm_medium=github&utm_campaign=kvazzie%2Fdoteditorconfig&labelColor=171717&color=FF570A&link=https%3A%2F%2Fcoderabbit.ai&label=CodeRabbit+Reviews)
+
 Batteries-included base tooling for new (especially experimental) repos. Stop copy-pasting `.editorconfig` / `devenv` / `direnv` / `git-hooks` boilerplate.
 
 Clone once, `git subtree` (or just `cp`) into new projects.
