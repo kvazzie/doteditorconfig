@@ -71,7 +71,7 @@ direnv allow
 
 `devenv.nix` declares basic hooks (`trim-trailing-whitespace`, `end-of-file-fixer`, `editorconfig-checker`, `check-merge-conflicts`). Enable per-project hooks there (e.g. `nixpkgs-fmt`, `shellcheck`, `statix`).
 
-Nix checks (`nixpkgs-fmt`, `statix`, `deadnix`) stay in `devenv.nix` git-hooks — they are what CI will run. `.helix/languages.toml` points at the same toolchain (`nixpkgs-fmt`, `nixd`), so local editing matches CI.
+`nixpkgs-fmt` is enabled in `devenv.nix` git-hooks, so it is what CI enforces; `statix` and `deadnix` are present but opt-in (`enable = false` — flip per project). `.helix/languages.toml` points at the same toolchain (`nixpkgs-fmt`, `nixd`), so local editing matches CI.
 
 Hooks are installed via `devenv`'s `git-hooks` module — no manual `.git/hooks` copying needed. `devenv shell` / `direnv` handles it.
 
@@ -82,8 +82,9 @@ This template is not an opinionated Helix distribution: no `config.toml` (theme,
 Helix loads repo-local config from `./.helix/languages.toml` (since 24.07, workspace config). Copy:
 
 ```bash
+# from your template checkout into the target repo
 mkdir -p .helix
-cp .helix/languages.toml .helix/languages.toml
+cp /tmp/doteditorconfig/.helix/languages.toml .helix/languages.toml
 ```
 
 Tweak per-project. See `.helix/languages.toml:1`.
