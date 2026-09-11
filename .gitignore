@@ -1,21 +1,18 @@
-# devenv
-.devenv/
-.devenv.flake.nix
+# Devenv
+.devenv*
 devenv.local.nix
-.devenv.lock
-result
-result-*
+devenv.local.yaml
 
 # direnv
 .direnv/
 .envrc.local
 
-# nix (keep flake.lock committed for reproducibility — uncomment to ignore in apps)
-# flake.lock
+# git-hooks
+.pre-commit-config.yaml
 
 # helix
 .helix/runtime/
 
-# os
+# OS
 .DS_Store
 Thumbs.db

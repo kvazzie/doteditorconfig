@@ -3,15 +3,22 @@ root = true
 [*]
 charset = utf-8
 end_of_line = lf
-indent_style = tab
-indent_size = 2
 insert_final_newline = true
 trim_trailing_whitespace = true
-max_line_length = 79
+
+[*.nix]
+indent_style = space
+indent_size = 2
+
+[*.{yaml,yml}]
+indent_style = space
+indent_size = 2
+
+[Makefile]
+indent_style = tab
 
 [*.{bat,cmd,ps1}]
 end_of_line = crlf
 
-[*.{md}]
-max_line_length = off
+[*.md]
 trim_trailing_whitespace = false
