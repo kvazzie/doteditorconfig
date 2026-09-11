@@ -3,108 +3,145 @@
 [![Built with devenv](https://devenv.sh/assets/devenv-badge.svg)](https://devenv.sh)
 ![CodeRabbit Pull Request Reviews](https://img.shields.io/coderabbit/prs/github/kvazzie/doteditorconfig?utm_source=oss&utm_medium=github&utm_campaign=kvazzie%2Fdoteditorconfig&labelColor=171717&color=FF570A&link=https%3A%2F%2Fcoderabbit.ai&label=CodeRabbit+Reviews)
 
-Batteries-included base tooling for new (especially experimental) repos. Stop copy-pasting `.editorconfig` / `devenv` / `direnv` / `git-hooks` boilerplate.
+A Devenv-first tooling base for new repositories. It provides one pinned
+environment, one command namespace, formatting, linting, tests, Git hooks, and
+CI without requiring a language-specific workspace manager.
 
-Clone once, `git subtree` (or just `cp`) into new projects.
+The template is monorepo-ready, but it does not create application or package
+directories. Add repository components when their purpose and stack are known.
 
-## What's inside
+## What is inside
 
-```
+```text
 .
-├── .editorconfig          # root = true, tab/2, lf, utf-8, trimmed (md + bat exceptions)
-├── .envrc                 # direnv + devenv entrypoint (copy to repo root)
-├── flake.nix              # devenv flake shell
-├── flake.lock             # pinned inputs (keep committed)
-├── devenv.nix             # languages + git-hooks + enterShell
-├── devenv.yaml            # inputs (nixpkgs rolling)
-├── .helix/
-│   └── languages.toml     # repo-level Helix languages (project LSP/formatters only, no personal config)
-└── README.md
+├── .editorconfig
+├── .envrc
+├── .github/workflows/ci.yml
+├── .helix/languages.toml
+├── AGENTS.md
+├── CLAUDE.md -> AGENTS.md
+├── devenv.lock
+├── devenv.nix
+├── devenv.yaml
+└── devenv/
+    ├── core.nix
+    ├── quality.nix
+    └── tasks.nix
 ```
 
-## Quick start in a new repo
+`devenv.nix` is a small import list. The modules under `devenv/` separate the
+base environment, repository quality rules, and public commands. A generated
+project can add more modules there without turning the root configuration into
+one large file.
 
-### Option A: git subtree (keeps update path)
+`devenv.lock` is the only dependency lock for the tooling environment. Commit
+it and update it intentionally with `devenv update`.
+
+## Requirements
+
+- Nix
+- Devenv 2.1 or newer
+- direnv, if automatic shell activation is wanted
+
+There is no flake fallback. Install Devenv before entering the repository.
+
+## Start a repository
+
+Copy the template into an empty repository or use it as the base of a new one:
 
 ```bash
-# from your new repo
-git remote add doteditorconfig git@github.com:artemi1/doteditorconfig.git
-git fetch doteditorconfig
-git subtree add --prefix=.tooling doteditorconfig main --squash
-# then copy what you need to root:
-cp .tooling/.editorconfig ./
-cp .tooling/.envrc ./
-cp .tooling/{flake.nix,flake.lock,devenv.nix,devenv.yaml} ./
-cp -r .tooling/.helix ./
+git clone --depth 1 https://github.com/kvazzie/doteditorconfig.git my-project
+cd my-project
+git remote remove origin
 direnv allow
-devenv shell  # or just enter the dir
 ```
 
-To pull updates later:
-```bash
-git subtree pull --prefix=.tooling doteditorconfig main --squash
-```
+Without direnv, prefix commands with `devenv shell` or use Devenv tasks
+directly.
 
-### Option B: sparse copy (no history)
+## Repository commands
 
-```bash
-npx degit artemi1/doteditorconfig#main -- .tooling
-# or
-git clone --depth 1 git@github.com:artemi1/doteditorconfig.git /tmp/doteditorconfig
-cp /tmp/doteditorconfig/.editorconfig ./
-cp /tmp/doteditorconfig/.envrc ./
-cp /tmp/doteditorconfig/{flake.nix,flake.lock,devenv.nix,devenv.yaml} ./
-cp -r /tmp/doteditorconfig/.helix ./
-```
-
-### Option C: gist-style (single file)
-
-Each file is standalone — just `curl -O` the raw file.
-
-## devenv + direnv
-
-Prereqs: `nix` with flakes enabled + `direnv` + `nix-direnv`.
+Inside the activated shell, run the namespaced scripts:
 
 ```bash
-cp .envrc .envrc          # from this repo to new repo root
-cp {flake.nix,flake.lock,devenv.nix,devenv.yaml} ./
-direnv allow
-# devenv will install git-hooks on first enter
+repo:fmt
+repo:lint
+repo:test
 ```
 
-`devenv.nix` declares basic hooks (`trim-trailing-whitespace`, `end-of-file-fixer`, `editorconfig-checker`, `check-merge-conflicts`). Enable per-project hooks there (e.g. `nixpkgs-fmt`, `shellcheck`, `statix`).
+The same interface is available without shell activation:
 
-`nixpkgs-fmt` is enabled in `devenv.nix` git-hooks, so it is what CI enforces; `statix` and `deadnix` are present but opt-in (`enable = false` — flip per project). `.helix/languages.toml` points at the same toolchain (`nixpkgs-fmt`, `nixd`), so local editing matches CI.
+```bash
+devenv tasks run repo:fmt
+devenv tasks run repo:lint
+devenv tasks run repo:test
+```
 
-Hooks are installed via `devenv`'s `git-hooks` module — no manual `.git/hooks` copying needed. `devenv shell` / `direnv` handles it.
+`devenv test` is the complete validation command used by CI. It builds the
+environment, runs every enabled Git hook against the repository, and runs all
+tasks connected to `repo:test`.
+
+`repo:test` starts as a successful no-op because this template does not assume
+a test framework. Components add their own test tasks to its dependency graph.
+
+## Extend the task graph
+
+Give each component a namespace and connect its tasks to the repository tasks.
+For example, a component module can contain:
+
+```nix
+{ config, ... }:
+
+{
+  tasks."component:lint" = {
+    cwd = "${config.git.root}/path/to/component";
+    exec = "component-linter";
+    before = [ "repo:lint" ];
+  };
+
+  tasks."component:test" = {
+    cwd = "${config.git.root}/path/to/component";
+    exec = "component-test-runner";
+    before = [ "repo:test" ];
+  };
+}
+```
+
+Import that module from `devenv.nix`. The root commands remain unchanged as the
+repository grows. Devenv can execute independent tasks concurrently.
+
+## Formatting and linting ownership
+
+`.editorconfig` owns encoding, line endings, final newlines, and trailing
+whitespace. It specifies indentation only for formats with a clear convention.
+`editorconfig-checker` validates those rules without rewriting files.
+
+Treefmt owns language formatting. Nix uses `nixfmt`, shell files use `shfmt`,
+and future components add their formatters to `devenv/quality.nix` or another
+imported module. Entering the shell does not format files. Formatting happens
+only through `repo:fmt` or the treefmt Git hook.
+
+The default hooks also check JSON, YAML, merge-conflict markers, large files,
+dead Nix code, and Statix findings. Devenv installs and runs the hook runner, so
+contributors do not install or configure it separately.
 
 ## Helix
 
-This template is not an opinionated Helix distribution: no `config.toml` (theme, keys, editor prefs live in `~/.config/helix/`). The repo defines only `.helix/languages.toml` — project-specific LSP/formatters needed to work on *this* project. The Nix section there mirrors the devenv/CI toolchain (`nixpkgs-fmt` formatter, `nixd` language server from `languages.nix.enable`), so the contributor edits with the same tools CI checks.
+`.helix/languages.toml` contains repository-level language settings only. Nix
+formatting uses the same `nixfmt` binary supplied by Devenv. Personal themes,
+keybindings, and editor preferences remain in the user's Helix configuration.
 
-Helix loads repo-local config from `./.helix/languages.toml` (since 24.07, workspace config). Copy:
+## CI
+
+The GitHub Actions workflow only installs Nix and Devenv, then runs:
 
 ```bash
-# from your template checkout into the target repo
-mkdir -p .helix
-cp /tmp/doteditorconfig/.helix/languages.toml .helix/languages.toml
+devenv test
 ```
 
-Tweak per-project. See `.helix/languages.toml:1`.
-
-## EditorConfig
-
-Already at repo root. No setup. Verifiable via `editorconfig-checker` hook.
-
-## Roadmap
-
-- [x] .editorconfig
-- [x] devenv + .envrc + git-hooks
-- [x] Helix repo languages (project-only, no personal config.toml)
-- [ ] lefthook / pre-commit alternative template
-- [ ] justfile / taskfile template
-- [ ] CI (github actions) minimal template
+All project-specific checks stay in the Devenv task graph rather than being
+duplicated in CI YAML.
 
 ## License
 
-MIT — do whatever you want with the templates.
+MIT. Use and adapt the template freely.
