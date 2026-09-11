@@ -4,7 +4,8 @@ Use Devenv as the entry point for repository tooling:
 
 - `devenv tasks run repo:fmt` formats the repository.
 - `devenv tasks run repo:lint` runs every lint hook.
-- `devenv tasks run repo:test` runs project tests.
+- `devenv tasks run repo:test` runs configured component test tasks and
+  succeeds as a no-op until the repository defines them.
 - `devenv test` runs the complete local and CI validation.
 
 Add tools and task implementations as modules under `devenv/`. Namespace
